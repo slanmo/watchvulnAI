@@ -1,0 +1,37 @@
+export const sources = [
+  "avd",
+  "nox",
+  "oscs",
+  "threatbook",
+  "seebug",
+  "struts2",
+  "kev",
+  "venustech",
+  "chaitin",
+];
+export const channelFields: Record<string, string[]> = {
+  lanxin: ["domain", "access_token", "sign_secret"],
+  dingding: ["access_token", "sign_secret"],
+  lark: ["access_token", "sign_secret"],
+  wechatwork: ["key"],
+  webhook: ["url"],
+  slack: ["webhook_url", "channel"],
+  telegram: ["bot_token", "chat_ids"],
+  bark: ["url"],
+  serverchan: ["key"],
+  pushplus: ["token"],
+  wpush: ["apikey", "channel", "topic_code"],
+};
+export const channelNames: Record<string, string> = {
+  lanxin: "蓝信",
+  dingding: "钉钉机器人",
+  lark: "飞书机器人",
+  wechatwork: "企业微信",
+  webhook: "自定义 Webhook",
+  slack: "Slack",
+  telegram: "Telegram",
+  bark: "Bark",
+  serverchan: "Server酱",
+  pushplus: "PushPlus",
+  wpush: "WPUSH",
+};

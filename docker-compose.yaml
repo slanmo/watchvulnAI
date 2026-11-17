@@ -1,22 +1,36 @@
-version: '3'
 services:
   watchvuln:
-    restart: always
-    image: zemal/watchvuln:latest
-    environment:
-      DINGDING_ACCESS_TOKEN: YOUR_TOKEN_HERE
-      DINGDING_SECRET: YOUR_SECRET_HERE
-      DB_CONN: postgres://watchvuln:watchvuln@postgres:5432/watchvuln
-      INTERVAL: 30m
-    depends_on:
-      - postgres
-
-  postgres:
-    restart: always
-    image: postgres:14.4-alpine
-    environment:
-      POSTGRES_DB: watchvuln
-      POSTGRES_USER: watchvuln
-      POSTGRES_PASSWORD: watchvuln
+    build: .
+    image: watchvuln-ai:local
+    restart: unless-stopped
+    ports:
+      - "18080:18080"
     volumes:
-      - "./data/postgresql:/var/lib/postgresql/data"
+      - watchvuln_data:/app/data
+    environment:
+      TZ: Asia/Shanghai
+    security_opt:
+      - no-new-privileges:true
+
+  # 默认使用 SQLite，数据库保存在 watchvuln_data 中。
+  # 如需 PostgreSQL，取消以下服务和底部 postgres_data 数据卷的注释，
+  # 然后在首次初始化选择 PostgreSQL，连接串：
+  # postgres://watchvuln:Root_2025@postgres:5432/watchvuln?sslmode=disable
+  # postgres:
+  #   image: postgres:16-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: watchvuln
+  #     POSTGRES_USER: watchvuln
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Root_2025}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U watchvuln -d watchvuln"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+
+volumes:
+  watchvuln_data:
+  # postgres_data:

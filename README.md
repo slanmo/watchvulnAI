@@ -1,477 +1,187 @@
-# WatchVuln 高价值漏洞采集与推送
+# WatchVuln AI
 
-众所周知，CVE 漏洞库中 99% 以上的漏洞只是无现实意义的编号。我想集中精力看下当下需要关注的高价值漏洞有哪些，而不是被各类 RSS
-和公众号的 ~~威胁情报~~ 淹没。 于是写了这个小项目来抓取部分高质量的漏洞信息源然后做推送。 `WatchVuln`意为**监测**
-漏洞更新，同时也表示这些漏洞需要**注意**。
+漏洞情报采集、筛选、AI 分析与通知平台。后端采用 Go / Gin，前端采用 React / TypeScript / Ant Design，默认使用 SQLite，提供 PostgreSQL 适配与旧版 CLI 兼容插件。
 
-当前抓取了这几个站点的数据:
+## 界面预览
 
-| 名称                         | 地址                                                                                              | 推送策略                                             |
-|----------------------------|-------------------------------------------------------------------------------------------------|--------------------------------------------------|
-| 阿里云漏洞库                     | https://avd.aliyun.com/high-risk/list                                                           | 等级为高危或严重                                         |
-| 长亭漏洞库                      | https://stack.chaitin.com/vuldb/index                                                           | 等级为高危或严重**并且**标题含中文                              |
-| OSCS开源安全情报预警               | https://www.oscs1024.com/cm                                                                     | 等级为高危或严重**并且**包含 `预警` 标签                         |
-| 奇安信威胁情报中心                  | https://ti.qianxin.com/                                                                         | 等级为高危严重**并且**包含 `奇安信CERT验证` `POC公开` `技术细节公布`标签之一 |
-| 微步在线研究响应中心(公众号)            | https://x.threatbook.com/v5/vulIntelligence                                                     | 等级为高危或严重                                         |
-| 知道创宇Seebug漏洞库              | https://www.seebug.org/                                                                         | 等级为高危或严重                                         |
-| 启明星辰漏洞通告                   | https://www.venustech.com.cn/new_type/aqtg/                                                     | 等级为高危或严重                                         |
-| CISA KEV                   | https://www.cisa.gov/known-exploited-vulnerabilities-catalog                                    | 全部推送                                             |
-| Struts2 Security Bulletins | [Struts2 Security Bulletins](https://cwiki.apache.org/confluence/display/WW/Security+Bulletins) | 等级为高危或严重                                         |
+以下截图来自实际部署的公开界面，仅供功能与布局参考；不同版本、权限和数据下显示内容可能不同。
 
-> 所有信息来自网站公开页面, 如果有侵权，请提交 issue, 我会删除相关源。
->
-> 如果有更好的信息源也可以反馈给我，需要能够响应及时 & 有办法过滤出有价值的漏洞
+### 登录
 
-具体来说，消息的推送有两种情况, 两种情况有内置去重，不会重复推送:
+![登录页面](.github/assets/login.png)
 
-- 新建的漏洞符合推送策略，直接推送,
-- 新建的漏洞不符合推送策略，但漏洞信息被更新后符合了推送策略，也会被推送
+登录页面仅负责身份认证；开启公开访问后，提供独立的公开情报入口，不在登录表单中嵌套列表。
 
-![app](./.github/assets/app.jpg)
+### 公开情报
 
-## 快速使用
+![公开情报与报告](.github/assets/public-portal.png)
 
-支持下列推送方式:
+### AI 风险报告
 
-- [钉钉群组机器人](https://open.dingtalk.com/document/robots/custom-robot-access)
-- [微信企业版群组机器人](https://open.work.weixin.qq.com/help2/pc/14931)
-- [飞书群组机器人](https://open.feishu.cn/document/ukTMukTMukTM/ucTM5YjL3ETO24yNxkjN)
-- [蓝信群组机器人](https://developer.lanxin.cn/official/article?id=646ecae03d4e4adb7039c0e4&module=development-help&article_id=646f193b3d4e4adb7039c21c)
-- [Server 酱](https://sct.ftqq.com/)
-- [PushPlus](https://pushplus.plus/)
-- [WPUSH](https://wpush.cn/)
-- [Slack Webhook](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/)
-- [Telegram Bot](https://core.telegram.org/bots/tutorial)
-- [自定义 Bark 服务](https://github.com/Finb/Bark)
-- [自定义 Webhook 服务](./examples/webhook)
+![AI统计分析报告](.github/assets/report.png)
 
-### 使用 Docker
+## 功能
 
-Docker 方式推荐使用环境变量来配置服务参数
+- **漏洞情报**：搜索、筛选、手动通过/排除、历史重新标记、详情前后切换及后台手动推送。
+- **采集配置**：多来源、代理、TLS 配置、采集间隔、自定义每日时段与跨午夜窗口；手动采集不受定时时段限制。
+- **名单规则**：按标题、标签、描述、修复方案匹配普通关键词或 Go RE2 正则；命中原因显示名单名称，黑名单优先。
+- **源状态**：只读探测可用性、结果数、耗时和错误，不入库或推送。
+- **AI 漏洞分析**：影响范围、风险、验证思路及修改方案独立保存，不覆盖来源修复方案；推送卡片只展示影响范围和风险，其他内容通过详情访问。
+- **AI 报告**：日报、周报与自定义日期报告，东八区展示，包含确定性统计图表、组件分类和风险提示，后台生成且支持取消。
+- **通知**：飞书交互卡片、钉钉 actionCard 及其他渠道；失败记录重试，最近任务集中展示。
+- **权限**：本地账户、LDAP、OIDC、飞书及钉钉认证；SSO 源位于用户权限。管理员功能与公开只读接口分离。
 
-| 环境变量名                   | 说明                                                                                | 默认值                                               |
-|-------------------------|-----------------------------------------------------------------------------------|---------------------------------------------------|
-| `DB_CONN`               | 数据库链接字符串，详情见 [数据库连接](#数据库连接)                                                      | `sqlite3://vuln_v3.sqlite3`                       |
-| `DINGDING_ACCESS_TOKEN` | 钉钉机器人 url 的 `access_token` 部分                                                     |                                                   |
-| `DINGDING_SECRET`       | 钉钉机器人的加签值 （仅支持加签方式）                                                               |                                                   |
-| `LARK_ACCESS_TOKEN`     | 飞书机器人 url 的 `/open-apis/bot/v2/hook/` 后的部分, 也支持直接指定完整的 url 来访问私有部署的飞书             |                                                   |
-| `LARK_SECRET`           | 飞书机器人的加签值 （仅支持加签方式）                                                               |                                                   |
-| `WECHATWORK_KEY `       | 微信机器人 url 的 `key` 部分                                                              |                                                   |
-| `SERVERCHAN_KEY `       | Server酱的 `SCKEY`                                                                  |                                                   |
-| `WEBHOOK_URL`           | 自定义 webhook 服务的完整 url                                                             |                                                   |
-| `BARK_URL`              | Bark 服务的完整 url, 路径需要包含 DeviceKey                                                  |                                                   |
-| `PUSHPLUS_KEY`          | PushPlus的token                                                                    |                                                   |
-| `WPUSH_KEY`             | WPUSH 的 apikey                                                                    |                                                   |
-| `WPUSH_CHANNEL`         | WPUSH 发送通道，可选 wechat/app/webhook/feishu/dingtalk/wechat_work/mail/sms 等           | `wechat`                                          |
-| `WPUSH_TOPIC_CODE`      | WPUSH 主题消息编码（可选）                                                                |                                                   |
-| `LANXIN_DOMAIN`         | 蓝信webhook机器人的域名                                                                   |                                                   |
-| `LANXIN_TOKEN`          | 蓝信webhook机器人的hook token                                                           |                                                   |
-| `LANXIN_SECRET`         | 蓝信webhook机器人的签名                                                                   |                                                   |
-| `TELEGRAM_BOT_TOKEN`    | Telegram Bot Token                                                                |                                                   |
-| `TELEGRAM_CHAT_IDS`     | Telegram Bot 需要发送给的 chat 列表，使用 `,` 分割                                             |                                                   |
-| `SLACK_WEBHOOK_URL`     | slack webhook 完整 url                                                              |                                                   |
-| `SLACK_CHANNEL`         | 要推送到的 slack 频道                                                                    |                                                   |
-| `SOURCES`               | 启用哪些漏洞信息源，逗号分隔, 可选 `avd`, `ti`, `oscs`, `seebug`,`threatbook`,`struts2`,`chaitin` | `avd,ti,oscs,threatbook,seebug,struts2,venustech` |
-| `INTERVAL`              | 检查周期，支持秒 `60s`, 分钟 `10m`, 小时 `1h`, 最低 `1m`                                        | `30m`                                             |
-| `ENABLE_CVE_FILTER`     | 启用 CVE 过滤，开启后多个数据源的统一 CVE 将只推送一次                                                  | `true`                                            |
-| `NO_FILTER`             | 禁用上述推送过滤策略，所有新发现的漏洞都会被推送                                                          | `false`                                           |
-| `NO_START_MESSAGE`      | 禁用服务启动的提示信息                                                                       | `false`                                           |
-| `WHITELIST_FILE`        | 指定推送漏洞的白名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                             |                                                   |
-| `BLACKLIST_FILE`        | 指定推送漏洞的黑名单列表文件, 详情见 [推送内容筛选](#推送内容筛选)                                             |                                                   |
-| `DIFF`                  | 跳过初始化阶段，转而直接检查漏洞更新并推送                                                             |                                                   |
-| `HTTPS_PROXY`           | 给所有请求配置代理, 详情见 [配置代理](#配置代理)                                                      |                                                   |
-| `GO_SKIP_TLS_CHECK`     | 跳过 tls 校验，详情见 [配置代理](#配置代理)                                                       | `false`                                           |
-| `NO_SLEEP`              | 禁用夜晚休眠，全天24小时无休！[其他](#其他)                                                         | `false`                                           |
+> AI 输出仅供辅助研判，需结合实际资产与厂商公告复核。图表统计不代表实际资产暴露量。使用 AI 会消耗服务商 Token。
 
-比如使用钉钉机器人
+## Docker 快速部署
+
+需要 Docker Engine 与 Docker Compose 插件。项目使用多阶段构建，构建时需要访问 npm、Go 模块和基础镜像仓库。
 
 ```bash
-docker run --restart always -d \
-  -e DINGDING_ACCESS_TOKEN=xxxx \
-  -e DINGDING_SECRET=xxxx \
-  -e INTERVAL=30m \
-  -e ENABLE_CVE_FILTER=true \
-  zemal/watchvuln:latest
+docker compose up -d --build
+docker compose ps
+docker compose logs --tail=100 watchvuln
 ```
 
-当然，你可以仓靠使用本仓库的 `docker-compose.yaml` 文件，使用 `docker-compose` 来启动容器。
+访问 `http://服务器地址:18080`，首次打开按页面引导选择数据库并创建管理员。**没有预置通用管理员密码，请自行设置强密码。**
 
-每次更新记得重新拉镜像:
+默认配置：
 
-```
-docker pull zemal/watchvuln:latest
-```
+| 项目 | 默认值 |
+| --- | --- |
+| 端口 | `18080` |
+| 数据库 | SQLite |
+| 容器数据目录 | `/app/data` |
+| 持久化卷 | Compose 中的 `watchvuln_data`（实际名称通常含项目名前缀） |
+| 健康检查 | `/api/status` |
+| 进程用户 | 非 root |
 
+初始化后，空漏洞库自动执行一次基线采集，仅发送汇总、不逐条刷屏，也不批量调用 AI。采集范围受来源能力、页数与超时限制，并非无限回溯全部历史。后续新增记录按配置筛选和推送。
 
-<details><summary>使用企业微信群组机器人</summary>
+### PostgreSQL（可选）
+
+PostgreSQL 支持代码保留，`docker-compose.yaml` 中的服务与数据卷示例默认注释。需要时取消相关注释、配置强密码，并在初始化页面选择 PostgreSQL；连接串中的主机应使用 Compose 服务名，例如 `postgres`。**不要将已有 SQLite 数据目录直接当作 PostgreSQL 数据迁移。** Web 平台不支持直接使用旧版 MySQL 数据库。
+
+### 数据持久化与升级
 
 ```bash
-docker run --restart always -d \
-  -e WECHATWORK_KEY=xxxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
+# 停止服务，不删除卷
+docker compose stop
+
+# 重建并启动，复用原持久化卷
+docker compose up -d --build
 ```
 
-</details>
+升级前先停服备份完整数据目录/数据卷，包含数据库、初始化配置及上传历史文件。不要执行 `docker compose down -v` 或删除数据卷，除非明确准备销毁数据。数据库连接信息与服务密钥可能位于运行数据中，应限制访问且不得提交到仓库。
 
-<details><summary>飞书群组机器人</summary>
+## 配置指南
+
+### 页面导航
+
+- 漏洞情报：漏洞列表、黑名单、白名单、源状态、采集配置。
+- AI报告：分析报告、定时报告。
+- 通知服务：渠道配置与通知记录。
+- 用户权限：用户管理、SSO源。
+- 系统设置：访问设置、AI设置。
+
+### AI 设置
+
+在 **系统设置 → AI设置** 配置启用状态、服务商、API 地址、Key、模型、单次请求超时和失败重试次数。提供 DeepSeek、智谱 GLM、OpenAI 和自定义 OpenAI 兼容接口预设；模型必须是账号实际开通的 ID。地址填写到服务商 API 前缀，不要包含 `/chat/completions`。
+
+采集分析、手动分析及报告共用该配置。切换预设会填入地址与推荐模型，不会替你申请密钥；升级不会主动替换已有密钥。界面预设不等同于已对所有服务商及所有模型完成联网兼容验收。
+
+### 筛选与推送
+
+- “未通过上游高价值筛选”表示未通过本项目的来源适配器策略，不是 AI 判断。可在采集配置中关闭这层筛选，黑白名单与去重仍生效。
+- 长亭按高危/严重判断，不再要求中文标题；中文摘要为空时回退英文原文。
+- “重新标记”按已保存规则重算历史数据，可能覆盖人工通过/排除，不触发 AI 或通知。
+- 自动采集只推送通过记录。开启 AI 补充时，符合条件且缺少来源方案的新增漏洞先分析再推送，AI 失败后按原内容降级推送。
+- 管理员手动推送支持通过及排除记录；通过记录开启 AI 时先分析，排除记录直接推送且不改变筛选状态。
+- 再采集已有记录可补齐缺失字段，不重复视作新增，不覆盖已有人工/AI 内容。
+
+### 公开访问与详情链接
+
+在 **系统设置 → 访问设置** 配置公开访问 URL 和情报/报告权限。
+
+- `/`：登录控制台。
+- `/public`：独立只读公开门户；匿名访问需要管理员开启公开访问。
+- `/vulnerabilities/<id>`：漏洞详情，遵循访问权限配置。
+
+通知接收者需要能够访问公开访问 URL。`127.0.0.1` 仅指接收者自己的设备，不适合作为多人访问链接。公网部署应通过可信反向代理使用 HTTPS，并限制管理入口访问。
+
+### 时间与记录保留
+
+报告正文时间展示为 UTC+8；调度使用配置的时区。开始生成时间表示任务开始时间而非完成时间，服务恢复后可能补执行当天未生成的任务。
+
+通知记录和 AI 报告默认保留 **7 天**，旧配置有一次性迁移逻辑；启用新版前应备份历史数据。可分别配置保留天数，`0` 为永久保留；报告删除会同时删除其生成日志与关联投递记录。通知清理保护仍待投递或仍可重试的记录。
+
+## 内置来源
+
+| 标识 | 名称 |
+| --- | --- |
+| `avd` | 阿里云漏洞库 |
+| `nox` | 奇安信威胁情报（兼容旧别名 `ti`） |
+| `oscs` | OSCS 情报 |
+| `threatbook` | 微步情报 |
+| `seebug` | Seebug |
+| `struts2` | Struts2 安全公告 |
+| `kev` | 已利用漏洞目录 |
+| `venustech` | 启明星辰漏洞通告 |
+| `chaitin` | 长亭漏洞库 |
+
+各来源接口、字段、可用性和访问政策可能变化。遇到验证码或访问验证时，不应假定登录即可解决，也不应绕过访问限制；可暂时禁用该源并使用其他来源。
+
+## 源码构建与验证
+
+建议使用与 `Dockerfile` 一致的 **Go 1.24、Node.js 22**。前端使用 npm 锁文件安装。
 
 ```bash
-docker run --restart always -d \
-  -e LARK_ACCESS_TOKEN=xxxx \
-  -e LARK_SECRET=xxxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
+npm --prefix frontend ci
+npm --prefix frontend run build
+go build -o watchvuln .
+./watchvuln web
 ```
 
-</details>
+Windows 编译时可将输出命名为 `watchvuln.exe`。默认无参数同样启动 Web 服务。
 
-<details><summary>使用蓝信 Webhook 机器人</summary>
+| 环境变量 | 默认值 | 含义 |
+| --- | --- | --- |
+| `WATCHVULN_ADDR` | `:18080` | 监听地址 |
+| `WATCHVULN_DATA` | `data` | 运行数据目录 |
+| `WATCHVULN_ASSETS` | `frontend/dist` | 前端构建资源 |
 
 ```bash
-docker run --restart always -d \
-  -e LANXIN_DOMAIN=xxx \
-  -e LANXIN_TOKEN=xxx \
-  -e LANXIN_SECRET=xxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
+# 平台及兼容插件回归
+go test ./internal/platform ./plugins/legacy/ctrl ./plugins/legacy/push
+
+# 编译全部包及测试，但不执行联网采集测试
+go test ./... -run '^$'
+
+# 静态检查
+go vet ./internal/platform
 ```
 
-</details>
+`go test ./...` 包含实际联网采集测试，可能受验证码、限速、接口变化影响；不要将其视作纯离线测试。渠道的“测试”操作会真实发送消息，执行前应确认。
 
-<details><summary>使用 Server 酱</summary>
+## 旧版兼容插件
+
+旧 CLI、Ent 存储和推送实现集中在 `plugins/legacy/`，不是动态加载插件。共享采集器与工具在 `internal/grab/`、`internal/util/`。
 
 ```bash
-docker run --restart always -d \
-  -e SERVERCHAN_KEY=xxxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
+./watchvuln plugin legacy --help
+./watchvuln plugin legacy -c config.example.yaml
 ```
 
-</details>
+旧参数入口继续兼容。`config.example.yaml`、[CONFIG.md](CONFIG.md) 的文件配置说明主要用于 legacy 模式；**Web 配置存储于平台数据库，不通过该 YAML 自动导入**。旧 MySQL/Ent 表、历史推送状态及旧 Webhook 报文与新平台并不等价，不能只替换连接串完成迁移。
 
-<details><summary>使用 PushPlus</summary>
+## 仓库与数据安全
 
-```bash
-docker run --restart always -d \
-  -e PUSHPLUS_KEY=xxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
-```
+- 源码、依赖清单、部署配置与文档应纳入版本控制。
+- 不提交密钥、数据库、运行日志、临时发布脚本、可执行文件、`node_modules`、`dist` 或构建缓存。
+- 不在截图中暴露密钥、内部地址、账户资料或敏感漏洞信息；当前文档截图仅展示公开内容。
+- 清理本地调试环境不得删除业务数据卷、备份、`.codebuddy` 或无关项目资源。
+- 外部 AI coding 协作规范见 [Agent.MD](Agent.MD)。
 
-</details>
+## 许可证
 
-<details><summary>使用 WPUSH</summary>
-
-```bash
-docker run --restart always -d \
-  -e WPUSH_KEY=xxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
-```
-
-</details>
-
-<details><summary>使用 Slack Webhook</summary>
-
-```bash
-docker run --restart always -d \
-  -e SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX \
-  -e SLACK_CHANNEL=#your-channel \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
-```
-
-</details>
-
-<details><summary>使用Telegram 机器人</summary>
-
-```bash
-docker run --restart always -d \
-  -e TELEGRAM_BOT_TOKEN=xxx \
-  -e TELEGRAM_CHAT_IDS=1111,2222 \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
-```
-
-</details>
-
-
-<details><summary>使用自定义 Bark 服务</summary>
-
-```bash
-docker run --restart always -d \
-  -e BARK_URL=http://xxxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
-```
-
-</details>
-
-<details><summary>使用自定义 Webhook 服务</summary>
-
-通过自定义一个 webhook server，可以方便的接入其他服务, 实现方式可以参考: [example](./examples/webhook)
-
-```bash
-docker run --restart always -d \
-  -e WEBHOOK_URL=http://xxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
-```
-
-</details>
-
-
-
-<details><summary>使用多种服务</summary>
-
-如果配置了多种服务的密钥，那么每个服务都会生效， 比如使用钉钉和企业微信:
-
-```bash
-docker run --restart always -d \
-  -e DINGDING_ACCESS_TOKEN=xxxx \
-  -e DINGDING_SECRET=xxxx \
-  -e WECHATWORK_KEY=xxxx \
-  -e INTERVAL=30m \
-  zemal/watchvuln:latest
-```
-
-</details>
-
-
-初次运行会在本地建立全量数据库，大约需要 1 分钟，可以使用 `docker logs -f [containerId]` 来查看进度,
-完成后会在群内收到一个提示消息，表示服务已经在正常运行了。
-
-### 使用二进制
-
-前往 Release 下载对应平台的二进制，然后在命令行执行。命令行参数请参考 Docker 环境变量部分的说明，可以一一对应。
-
-```bash
-USAGE:
-   watchvuln [global options] command [command options] [arguments...]
-
-GLOBAL OPTIONS:
-   --config value, -c value  config file path, support json or yaml
-
-   [Push Options]
-
-   --bark-url value, --bark value             your bark server url, ex: http://127.0.0.1:1111/DeviceKey
-   --blacklist-file value, --bf value         specify a file that contains some keywords, vulns with these products will NOT be pushed
-   --dingding-access-token value, --dt value  webhook access token of dingding bot
-   --dingding-sign-secret value, --ds value   sign secret of dingding bot
-   --lanxin-domain value, --lxd value         your lanxin server url, ex: https://apigw-example.domain
-   --lanxin-hook-token value, --lxt value     lanxin hook token
-   --lanxin-sign-secret value, --lxs value    sign secret of lanxin
-   --lark-access-token value, --lt value      webhook access token/url of lark
-   --lark-sign-secret value, --ls value       sign secret of lark
-   --pushplus-key value, --pk value           send key for push plus
-   --serverchan-key value, --sk value         send key for server chan
-   --slack-channel value, --sc value          specify slack channel, eg, #security_vulns
-   --slack-webhook-url value, --sw value      specify slack webhook url, eg, https://hooks.slack.com/services/XXX/YYY/ZZZ
-   --telegram-bot-token value, --tgtk value   telegram bot token, ex: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
-   --telegram-chat-ids value, --tgids value   chat ids want to send on telegram, ex: 123456,4312341,123123
-   --webhook-url value, --webhook value       your webhook server url, ex: http://127.0.0.1:1111/webhook
-   --wechatwork-key value, --wk value         webhook key of wechat work
-   --wpush-channel value, --wpc value         optional channel for wpush, default wechat
-   --wpush-key value, --wpk value             api key for wpush
-   --wpush-topic-code value, --wpt value      optional topic_code for wpush topic messages
-   --whitelist-file value, --wf value         specify a file that contains some keywords, vulns with these keywords will be pushed
-
-   [Launch Options]
-
-   --db-conn value, --db value  database connection string (default: "sqlite3://vuln_v3.sqlite3")
-   --diff                       skip init vuln db, push new vulns then exit (default: false)
-   --enable-cve-filter          enable a filter that vulns from multiple sources with same cve id will be sent only once (default: true)
-   --interval value, -i value   checking every [interval], supported format like 30s, 30m, 1h (default: "30m")
-   --no-filter, --nf            ignore the valuable filter and push all discovered vulns (default: false)
-   --no-github-search, --ng     don't search github repos and pull requests for every cve vuln (default: false)
-   --no-sleep, --ns             don't sleep in night, run every interval (default: false)
-   --no-start-message, --nm     disable the hello message when server starts (default: false)
-   --proxy value, -x value      set request proxy, support socks5://xxx or http(s)://
-   --sources value, -s value    set vuln sources (default: "avd,nox,oscs,threatbook,seebug,struts2,kev,venustech")
-
-   [Other Options]
-
-   --debug, -d     set log level to debug, print more details (default: false)
-   --help, -h      show help (default: false)
-   --insecure, -k  allow insecure server connections when using SSL/TLS (default: false)
-   --test, -T      use to test message pusher, three mocked messages will be pushed (default: false)
-   --version, -v   print the version (default: false)
-```
-
-在参数中指定相关 Token 即可, 比如使用钉钉群组机器人
-
-```
-$ ./watchvuln --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET -i 30m
-```
-
-<details><summary>使用企业微信群组机器人</summary>
-
-```
-$ ./watchvuln --wk WECHATWORK_KEY -i 30m
-```
-
-</details>
-
-<details><summary>使用飞书群组机器人</summary>
-
-```bash
-$ ./watchvuln --lt LARK_ACCESS_TOKEN --ls LARK_SECRET -i 30m
-```
-
-</details>
-
-<details><summary>使用蓝信群组机器人</summary>
-
-```
-$ ./watchvuln --lxd xxxx --lxt xxx --lxs xxx -i 30m
-```
-
-</details>
-
-
-<details><summary>使用 Server 酱</summary>
-
-```
-$ ./watchvuln --sk xxxx -i 30m
-```
-
-</details>
-
-<details><summary>使用 PushPlus</summary>
-
-```
-$ ./watchvuln --pk xxxx -i 30m
-```
-
-</details>
-
-<details><summary>使用 WPUSH</summary>
-
-```
-$ ./watchvuln --wpk xxxx -i 30m
-```
-
-</details>
-
-<details><summary>使用 Slack Webhook </summary>
-
-```
-$ ./watchvuln --sw https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX --sc '#your_channel'  -i 30m
-```
-
-</details>
-
-
-<details><summary>使用 Telegram 机器人</summary>
-
-```
-$ ./watchvuln --tgtk xxxx --tgids 1111,2222 -i 30m
-```
-
-</details>
-
-
-<details><summary>使用自定义 Bark 服务</summary>
-
-```
-$ ./watchvuln --bark http://xxxx -i 30m
-```
-
-</details>
-
-<details><summary>使用自定义 Webhook 服务</summary>
-
-通过自定义一个 webhook server，可以方便的接入其他服务, 实现方式可以参考: [example](./examples/webhook)
-
-```
-$ ./watchvuln --webhook http://xxxx -i 30m
-```
-
-</details>
-
-
-<details><summary>使用多种服务</summary>
-
-如果配置了多种服务的密钥，那么每个服务都会生效， 比如使用钉钉和企业微信:
-
-```
-$ ./watchvuln --dt DINGDING_ACCESS_TOKEN --ds DINGDING_SECRET --wk WECHATWORK_KEY -i 30m
-```
-
-</details>
-
-## 配置文件
-
-进入查看详情 [使用配置文件](CONFIG.md)
-
-## 数据库连接
-
-默认使用 sqlite3 作为数据库，数据库文件为 `vuln_v3.sqlite3`，如果需要使用其他数据库，可以通过 `--db`
-参数或是环境变量 `DB_CONN` 指定连接字符串，当前支持的数据库有:
-
-- `sqlite3://filename`
-- `mysql://user:pass@host:port/dbname`
-- `postgres://user:pass@host:port/dbname`
-
-注意：该项目不做数据向后兼容保证，版本升级可能存在数据不兼容的情况，如果报错需要删库重来。
-
-## 配置代理
-
-watchvuln 支持配置上游代理来绕过网络限制，支持两种方式:
-
-- 环境变量 `HTTPS_PROXY`
-- 命令行参数 `--proxy`/`-x`
-
-支持 `socks5://xxxx` 或者 `http(s)://xxkx` 两种代理形式。
-
-参数 `-k/--insecure` 或者环境变量 `GO_SKIP_TLS_CHECK=1` 可以禁用 tls 校验，即会设置 `InSecureSkipVerify` 为 `true`
-，在抓包调试时会
-比较有用。
-
-## 推送内容筛选
-
-如果你只想推送某些产品的漏洞，可以通过配置白名单或者黑名单来实现。这两个参数传入的都是一个文件，文件格式为每行一个产品名，比如:
-
-```txt
-Apache
-泛微
-```
-
-温馨提示：如果你使用 `Docker` 来运行，可以通过挂载目录的方式将文件映射到容器内，比如:
-
-```bash
-echo "Apache" > whitelist.txt
-
-docker run -v $(pwd):/config \
-  -e WHITELIST_FILE=/config/whitelist.txt \
-  -e xxxx=xxxxx
-  zemal/watchvuln:latest
-```
-
-### 白名单过滤
-
-通过命令行参数 `-wf` 或者环境变量 `WHITELIST_FILE` 来指定白名单文件。在发现新漏洞时，将检查漏洞的 **标题** 和 **描述**
-是否包含白名单的任意一行，全都不在的将不推送漏洞。
-
-### 黑名单过滤
-
-通过命令行参数 `-bf` 或者环境变量 `BLACKLIST_FILE` 来指定黑名单文件。在发现新漏洞时，将检查漏洞的 **标题** 是否包含黑名单的任意一行，
-包含的将不推送漏洞。为了避免非预期的漏掉推送，黑名单**不会**检查漏洞的 **描述** 是否匹配。
-
-### 为什么xxx漏洞没有推送
-1. 检查日志看看对应漏洞是否正常抓取到
-2. 看看是否因为被判定为低价值漏洞而跳过了，会有 `not valuable` 字样
-4. 看看是否有推送相关的报错
-5. 如果都有没有，这个漏洞可能已经在漏洞库初始化时入库了，这种不会被判定为新漏洞自然也不会推送
-6. 如果还有问题可以 issue 或者交流群提问
-
-> 建议问问题之前先自行探索一下，避免问 docker 怎么看日志这种问题
-
-## 其他
-
-为了减少内卷，该工具在 00:00 到 07:00 间会去 sleep 不会运行, 请确保你的服务器是正确的时间！
-
-扫码加我拉进讨论群，请备注申请理由为：问题反馈与讨论，否则不通过
-
-<img src="https://github.com/user-attachments/assets/362d2079-4cfa-4764-819f-a4aa70580c1d" width="300" />
+本项目沿用 [MIT License](LICENSE)。

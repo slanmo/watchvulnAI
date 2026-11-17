@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zema1/watchvuln/grab"
-	"github.com/zema1/watchvuln/push"
+	"github.com/zema1/watchvuln/internal/grab"
+	"github.com/zema1/watchvuln/plugins/legacy/push"
 	"io"
 	"net/http"
 	"os"
