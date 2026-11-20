@@ -2,6 +2,8 @@
 
 漏洞情报采集、筛选、AI 分析与通知平台。后端采用 Go / Gin，前端采用 React / TypeScript / Ant Design，默认使用 SQLite，提供 PostgreSQL 适配与旧版 CLI 兼容插件。
 
+> 本项目基于 [zema1/watchvuln](https://github.com/zema1/watchvuln) 二次开发改造，重构为 Web 平台架构，并新增 AI 分析报告、多渠道推送与公开门户等能力；沿用 MIT License，感谢原作者的工作。
+
 ## 界面预览
 
 以下截图来自实际部署的公开界面，仅供功能与布局参考；不同版本、权限和数据下显示内容可能不同。
@@ -60,7 +62,7 @@ docker compose logs --tail=100 watchvuln
 
 ### PostgreSQL（可选）
 
-PostgreSQL 支持代码保留，`docker-compose.yaml` 中的服务与数据卷示例默认注释。需要时取消相关注释、配置强密码，并在初始化页面选择 PostgreSQL；连接串中的主机应使用 Compose 服务名，例如 `postgres`。**不要将已有 SQLite 数据目录直接当作 PostgreSQL 数据迁移。** Web 平台不支持直接使用旧版 MySQL 数据库。
+支持PostgreSQL ，`docker-compose.yaml` 中的服务与数据卷示例默认注释。需要时取消相关注释、配置强密码，并在初始化页面选择 PostgreSQL；连接串中的主机应使用 Compose 服务名，例如 `postgres`。
 
 ### 数据持久化与升级
 
@@ -131,6 +133,29 @@ docker compose up -d --build
 
 各来源接口、字段、可用性和访问政策可能变化。遇到验证码或访问验证时，不应假定登录即可解决，也不应绕过访问限制；可暂时禁用该源并使用其他来源。
 
+## 二进制发布包
+
+提供 Windows amd64（zip）与 Linux amd64（tar.gz）发布包
+
+Linux 运行：
+
+```bash
+tar -xzf watchvuln-*-linux-amd64.tar.gz
+cd watchvuln-linux-amd64
+WATCHVULN_ASSETS=./dist ./watchvuln
+```
+
+Windows 运行：
+
+```powershell
+Expand-Archive watchvuln-*-windows-amd64.zip
+cd watchvuln-windows-amd64
+$env:WATCHVULN_ASSETS = ".\dist"
+.\watchvuln.exe
+```
+
+默认监听 `:18080`，运行数据写入 `data/`；环境变量含义见下方 [源码构建与验证](#源码构建与验证) 的说明表。
+
 ## 源码构建与验证
 
 建议使用与 `Dockerfile` 一致的 **Go 1.24、Node.js 22**。前端使用 npm 锁文件安装。
@@ -173,14 +198,6 @@ go vet ./internal/platform
 ```
 
 旧参数入口继续兼容。`config.example.yaml`、[CONFIG.md](CONFIG.md) 的文件配置说明主要用于 legacy 模式；**Web 配置存储于平台数据库，不通过该 YAML 自动导入**。旧 MySQL/Ent 表、历史推送状态及旧 Webhook 报文与新平台并不等价，不能只替换连接串完成迁移。
-
-## 仓库与数据安全
-
-- 源码、依赖清单、部署配置与文档应纳入版本控制。
-- 不提交密钥、数据库、运行日志、临时发布脚本、可执行文件、`node_modules`、`dist` 或构建缓存。
-- 不在截图中暴露密钥、内部地址、账户资料或敏感漏洞信息；当前文档截图仅展示公开内容。
-- 清理本地调试环境不得删除业务数据卷、备份、`.codebuddy` 或无关项目资源。
-- 外部 AI coding 协作规范见 [Agent.MD](Agent.MD)。
 
 ## 许可证
 

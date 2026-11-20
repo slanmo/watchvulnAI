@@ -33,3 +33,5 @@ config.yml
 data/
 *backup/
 watchvuln
+Agent.MD
+release
