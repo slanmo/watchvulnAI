@@ -20,7 +20,12 @@
 
 ### AI 风险报告
 
+<details>
+<summary>点击展开 AI 统计分析报告截图</summary>
+
 ![AI统计分析报告](.github/assets/report.png)
+
+</details>
 
 ## 功能
 
